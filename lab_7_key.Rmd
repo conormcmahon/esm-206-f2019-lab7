@@ -45,8 +45,7 @@ For more Flint residential testing and blood lead levels data: [michigan.gov](ht
 #### Read in and explore the Flint water data: 
 
 ```{r}
-flint_pb <- read_csv(here::here("lab_7_materials",
-                                "flint_water.csv")) %>% 
+flint_pb <- read_csv(here::here("flint_water.csv")) %>% 
   clean_names() %>% 
   rename(pb_immediate = pb_bottle_1_ppb_first_draw, 
          pb_2min = pb_bottle_2_ppb_2_mins_flushing) 
@@ -101,6 +100,12 @@ sd_immediate <- sd(flint_pb$pb_immediate, na.rm = TRUE)
 sd_flushed <- sd(flint_pb$pb_2min, na.rm = TRUE)
 
 # Lead concentrations measured in immediately collected samples are much higher than those in water collected after 2 min flushing. 
+
+cat(paste("Counts:  ", round(n_immediate,2), "; \t", round(n_flushed,2), "\n",
+          "Means:   ", round(mean_immediate,2), "; \t", round(mean_flushed,2), "\n",
+          "Medians: ", round(median_immediate,2), "; \t", round(median_flushed,2), "\n",
+          "Stdevs:  ", round(sd_immediate,2), "; \t", round(sd_flushed,2), "\n", sep = ""))
+
 ```
 
 Return the values for the sample sizes and summary statistics in the code chunk above to see them in the Console. How do the sample means of lead concentration compare for immediate vs. 2-min flushed water samples?
@@ -132,15 +137,30 @@ Perform the test by inputting the sample vectors, and adding argument `paired = 
 ```{r}
 my_flint_test <- t.test(flint_pb$pb_immediate, flint_pb$pb_2min, paired = TRUE)
 
+print(my_flint_test)
+
+# threshold p_value
+#   If p-value is below 0.001, just show p < 0.001
+#   Otherwise, give p-value in scientific notation
+if (my_flint_test$p.value < 0.001)
+{
+  p_val_str = "< 0.001"
+} else
+{
+  p_val_str = paste("= ", formatC(my_flint_test$p.value, format = 'e', digits = 2), sep="")
+}
+
 ```
 
 Look at the results for `my_flint_test`. Think about the outcome, and decide based on the *p*-value whether you have enough evidence to reject the null hypothesis that the mean lead concentration in immediate and 2-min flushing samples is the same. 
 
-**Example statement of test outcome:** 
+**Statement of test outcome:** 
 
-"Mean lead concentration (ppb) measured in immediately collected water samples (`r round(mean_immediate, 2)` $\pm$ `r round(sd_immediate, 2)`, n = `r n_immediate`) differed significantly from lead in water collected after 2 minutes of flushing (`r round(mean_flushed, 2)` $\pm$ `r round(sd_flushed, 2)`, n = `r n_flushed`) by a paired two-sample t-test (t(`r round(my_flint_test$parameter, 2)`) = `r round(my_flint_test$statistic, 2)`, *p* < 0.001)."
+Mean lead concentration (ppb) measured in immediately collected water samples (`r round(mean_immediate, 2)` $\pm$ `r round(sd_immediate, 2)`, n = `r n_immediate`) differed significantly from lead in water collected after 2 minutes of flushing (`r round(mean_flushed, 2)` $\pm$ `r round(sd_flushed, 2)`, n = `r n_flushed`) by a paired two-sample t-test (t(`r round(my_flint_test$parameter, 2)`) = `r round(my_flint_test$statistic, 2)`, *p* `r p_val_str ` ).
 
 **Note:** Usually when a p-value is really tiny, *p* < 0.001 is sufficient. But ask: Why is the way I added that in the statement above *not* best practice for reproducibility? 
+
+**Because it is hard coded, and not dependent on the actual analysis produced in the code block! **
 
 #### Two-sample, ONE-sided **paired** t-test:
 
@@ -166,15 +186,31 @@ Our question is: "Are mean lead concentrations in water after 2-min flushing *LE
 
 Perform a one-sided, two-sample paired t-test:
 ```{r}
-flushed_less_ttest <- t.test(flint_pb$pb_immediate, 
-                             flint_pb$pb_2min, 
+flushed_less_ttest <- t.test(flint_pb$pb_2min, 
+                             flint_pb$pb_immediate,
                              paired = TRUE, 
                              alternative = "less")
+
+print(flushed_less_ttest)
+
+# threshold p_value
+#   If p-value is below 0.001, just show p < 0.001
+#   Otherwise, give p-value in scientific notation
+if (my_flint_test$p.value < 0.001)
+{
+  p_val_str_less = "< 0.001"
+} else
+{
+  p_val_str_less = paste("= ", formatC(my_flint_test$p.value, format = 'e', digits = 2), sep="")
+}
+
 ```
 
 Check out the results for `flushed_less_ttest`.
 
 On your own based on the results, **write a final statement using in-line referencing**.
+
+Mean lead concentration (ppb) measured in immediately collected water samples (`r round(mean_immediate, 2)` $\pm$ `r round(sd_immediate, 2)`, n = `r n_immediate`) was significantly higher than lead in water collected after 2 minutes of flushing (`r round(mean_flushed, 2)` $\pm$ `r round(sd_flushed, 2)`, n = `r n_flushed`) by a paired two-sample one-sided t-test (t(`r round(flushed_less_ttest$parameter, 2)`) = `r round(flushed_less_ttest$statistic, 2)`, *p* `r p_val_str_less ` ).
 
 ### Cohen's *d* effect size
 
